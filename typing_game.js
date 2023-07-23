@@ -319,6 +319,8 @@ async function runScript() {
 
     const filesToClear = ['contexto_responses_dict.json', 'winning_word.json'];
 
+    var playedGames = [];
+
     const browser = await puppeteer.launch({
         headless: false,
         args: [`--window-size=1100,850`],
@@ -356,9 +358,11 @@ async function runScript() {
     var randGame = await page.evaluate(() => {
         var randNumber = -1;
         while (randNumber === -1 || randNumber === 0 || randNumber === 217 || randNumber === 249 || randNumber === 251 ||
-            randNumber === 25 || randNumber === 27 || randNumber === 33 || randNumber === 199) {
+            randNumber === 25 || randNumber === 27 || randNumber === 33 || randNumber === 199 || playedGames.includes(randNumber)) {
             randNumber = Math.floor(Math.random() * 299)
         }
+        
+        playedGames.push(randNumber)
         var game = "";
         
         var modal = document.querySelector(".modal"); // Select the element with class .modal
@@ -744,7 +748,7 @@ async function runScript() {
 
                         // Create a text element
                         const textElement = document.createElement('p');
-                        textElement.innerHTML = 'Tiny diny &#x1F996; to unlock this word!';
+                        textElement.innerHTML = 'Tiny diny &#x1F996; for a hint word!';
 
                         // Add the text element to the cover div
                         coverDiv.appendChild(textElement);
@@ -1036,9 +1040,11 @@ async function runScript() {
                 randGame = await page.evaluate(() => {
                     var randNumber = -1;
                     while (randNumber === -1 || randNumber === 0 || randNumber === 217 || randNumber === 249 || randNumber === 251 ||
-                        randNumber === 25 || randNumber === 27 || randNumber === 33 || randNumber === 199) {
+                        randNumber === 25 || randNumber === 27 || randNumber === 33 || randNumber === 199 || playedGames.includes(randNumber)) {
                         randNumber = Math.floor(Math.random() * 299)
                     }
+
+                    playedGames.push(randNumber)
                     var game = "";
                     
                     var modal = document.querySelector(".modal"); // Select the element with class .modal
