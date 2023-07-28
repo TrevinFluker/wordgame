@@ -319,8 +319,6 @@ async function runScript() {
 
     const filesToClear = ['contexto_responses_dict.json', 'winning_word.json'];
 
-    var playedGames = [];
-
     const browser = await puppeteer.launch({
         headless: false,
         args: [`--window-size=1100,850`],
@@ -358,11 +356,10 @@ async function runScript() {
     var randGame = await page.evaluate(() => {
         var randNumber = -1;
         while (randNumber === -1 || randNumber === 0 || randNumber === 217 || randNumber === 249 || randNumber === 251 ||
-            randNumber === 25 || randNumber === 27 || randNumber === 33 || randNumber === 199 || playedGames.includes(randNumber)) {
+            randNumber === 25 || randNumber === 27 || randNumber === 33 || randNumber === 199 || randNumber === 106) {
             randNumber = Math.floor(Math.random() * 299)
         }
         
-        playedGames.push(randNumber)
         var game = "";
         
         var modal = document.querySelector(".modal"); // Select the element with class .modal
@@ -582,7 +579,7 @@ async function runScript() {
 
     await page.evaluate(() => {
         document.getElementById("toasty3").style.opacity = '1';
-        document.getElementById("toasty3").innerText = "UNLOCK A WORD TO JOIN THE WALL!"
+        document.getElementById("toasty3").innerText = "UNLOCK A HINT TO JOIN THE WALL!"
     });
 
     await page.evaluate(() => {
@@ -612,7 +609,7 @@ async function runScript() {
         document.getElementById("toasty4").style.opacity = '1';
         document.getElementById("toasty4").innerText = "Follow if you like the game!!!"
     });
-
+    var playedGames = [];
     var gameOn = true;
     var count = 0;
     while (gameOn === true) {
@@ -718,7 +715,7 @@ async function runScript() {
                 var payWords = games["game" + gameNumber];
                 await page.focus(".word");
 
-                for (var i = 3; i < 5; i++) {
+                for (var i = 1; i < 3; i++) {
                     var word = payWords[i];
                     await page.focus(".word");
                     await page.evaluate((word) => {
@@ -732,7 +729,7 @@ async function runScript() {
                 await page.evaluate(() => {
                     for (var i = 0; i < 3; i++) {
                         const targetDiv = document.querySelectorAll(".row-wrapper")[i];
-
+                
                         // Create a cover div
                         const coverDiv = document.createElement('div');
                         coverDiv.classList.add("cover");
@@ -742,21 +739,37 @@ async function runScript() {
                         coverDiv.style.width = '85%';
                         coverDiv.style.height = '100%';
                         coverDiv.style.backgroundColor = 'rgba(0, 0, 0)';
-                        coverDiv.style.color = "white";
                         coverDiv.style.paddingLeft = "10px";
                         coverDiv.style.paddingTop = "3px";
-
+                
                         // Create a text element
                         const textElement = document.createElement('p');
                         textElement.innerHTML = 'Tiny diny &#x1F996; for a hint word!';
-
+                        textElement.style.animation = 'color-change 1s infinite alternate';
+                
                         // Add the text element to the cover div
                         coverDiv.appendChild(textElement);
-
+                
                         // Add the cover div to the target div
                         targetDiv.appendChild(coverDiv);
                     }
+                
+                    // Add the color-change animation to the CSS of the page
+                    const styleElement = document.createElement('style');
+                    styleElement.innerHTML = `
+                        @keyframes color-change {
+                            from {
+                                color: white;
+                            }
+                            to {
+                                color: #00D26A;
+                            }
+                        }
+                    `;
+                    document.head.appendChild(styleElement);
                 });
+                
+                
             }
 
             const element = await page.$('.loadingElement');
@@ -1037,14 +1050,13 @@ async function runScript() {
                     console.log(`PowerShell script output:\n${stdout}`);
                   });
 
-                randGame = await page.evaluate(() => {
+                randGame = await page.evaluate((playedGames) => {
                     var randNumber = -1;
                     while (randNumber === -1 || randNumber === 0 || randNumber === 217 || randNumber === 249 || randNumber === 251 ||
-                        randNumber === 25 || randNumber === 27 || randNumber === 33 || randNumber === 199 || playedGames.includes(randNumber)) {
+                        randNumber === 25 || randNumber === 27 || randNumber === 33 || randNumber === 199 || playedGames.includes(randNumber) || randNumber === 106) {
                         randNumber = Math.floor(Math.random() * 299)
                     }
 
-                    playedGames.push(randNumber)
                     var game = "";
                     
                     var modal = document.querySelector(".modal"); // Select the element with class .modal
@@ -1059,7 +1071,10 @@ async function runScript() {
                     }
                     }
                     return game
-                });
+                }, playedGames);
+                
+                playedGames.push(Number(randGame))
+                console.log(playedGames)
 
                 const filename = './currGame.txt';
                 fs.writeFile(filename, randGame, (err) => {
