@@ -315,7 +315,39 @@ gamesArray = {
     "game297": ["perfume"],
     "game298": ["sailor"],
     "game299": ["volcano"],
-    "game300": ["cookie"]
+    "game300": ["cookie"],
+    "game301": ["circle"],
+    "game302": ["wig"],
+    "game303": ["church"],
+    "game304": ["tooth"],
+    "game305": ["yogurt"],
+    "game306": ["tourist"],
+    "game307": ["nose"],
+    "game308": ["mailbox"],
+    "game309": ["olive"],
+    "game310": ["drawer"],
+    "game311": ["pineapple"],
+    "game312": ["island"],
+    "game313": ["duck"],
+    "game314": ["castle"],
+    "game315": ["leaf"],
+    "game316": ["brick"],
+    "game317": ["honey"],
+    "game318": ["suitcase"],
+    "game319": ["flute"],
+    "game320": ["waffle"],
+    "game321": ["tie"],
+    "game322": ["wardrobe"],
+    "game323": ["society"],
+    "game324": ["string"],
+    "game325": ["friendship"],
+    "game326": ["pan"],
+    "game327": ["map"],
+    "game328": ["highway"],
+    "game329": ["music"],
+    "game330": ["silk"],
+    "game331": ["lemon"],
+    "game332": ["iron"]
 }
 
 
@@ -376,7 +408,7 @@ async def on_join(event: JoinEvent):
 async def on_gift(event: GiftEvent):
     # Streakable gift & streak is over
     if event.gift.streakable and not event.gift.streaking:
-        if event.gift.info.name == "Tiny Diny":
+        if event.gift.info.name == "Doughnut":
             with open("./gifts.txt", 'a') as fi:
                 fi.write(f'g#')
                 fi.flush()
@@ -420,7 +452,7 @@ async def on_gift(event: GiftEvent):
 
     # Non-streakable gift
     elif not event.gift.streakable:
-        if event.gift.info.name == "Tiny Diny":
+        if event.gift.info.name == "Doughnut":
             with open("./gifts.txt", 'a') as fi:
                 fi.write(f'g')
                 fi.flush()

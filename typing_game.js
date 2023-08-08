@@ -1,15 +1,21 @@
 const puppeteer = require('puppeteer-extra');
 const fs = require('fs');
+const pm2 = require('pm2');
 const nodemon = require('nodemon');
 const player = require('play-sound')(opts = {});
 const adblocker = require('puppeteer-extra-plugin-adblocker')();
 const { exec } = require('child_process');
 puppeteer.use(adblocker);
 
-const winnerSound = "./winner_with_cheer.mp3"
+const winnerSoundScriptPath = './winnerSound.ps1';
+const winnerSoundCommand = `powershell.exe -File ${winnerSoundScriptPath}`;
+const confettiSoundScriptPath = './confettiSound.ps1';
+const confettiSoundCommand = `powershell.exe -File ${confettiSoundScriptPath}`;
 const clickSound = "./digital_click.mp3"
 const followSound = "./like_and_follow.mp3"
 const powershellScriptPath = 'z_speak.ps1';
+
+var isPlaying = false;
 
 async function runScript() {
     var games =
@@ -314,7 +320,39 @@ async function runScript() {
         game297: ["deodorant", "chanel", "burberry", "incense", "fragrant", "balm", "product", "intoxicate", "perfumer", "accessory", "bag", "collection", "mens", "aloe", "souvenir", "salve", "insecticide"],
         game298: ["soldier", "shipwreck", "yacht", "nautical", "skipper", "capture", "ocean", "kayaker", "retire", "scout", "whale", "thousand", "miner", "greek", "board", "maid", "pow"],
         game299: ["caldera", "arenal", "volcanism", "extinct", "himalayas", "reef", "tectonics", "kilimanjaro", "scenery", "machu", "montserrat", "icelandic", "rage", "national", "world", "cambrian", "sceneries"],
-        game300: ["oreo", "dessert", "shortbread", "oatmeal", "toast", "yummy", "pancake", "easter", "gift", "grandma", "place", "baker", "applesauce", "scratch", "really", "tiny", "click"]
+        game300: ["oreo", "dessert", "shortbread", "oatmeal", "toast", "yummy", "pancake", "easter", "gift", "grandma", "place", "baker", "applesauce", "scratch", "really", "tiny", "click"],
+        game301: ["rectangle", "along", "center", "ring", "eye", "spot", "shadow", "making", "create", "star", "get", "take", "similar", "ten", "break", "cube", "pearl"],
+        game302: ["toupee", "headband", "extension", "outfit", "fur", "corset", "eyebrow", "flapper", "womens", "shirt", "clip", "locs", "natural", "barrette", "redhead", "stuff", "freak"],
+        game303: ["presbyterian", "chapel", "parish", "clergy", "prayer", "place", "jewish", "ecumenical", "office", "youth", "cross", "downtown", "presbytery", "gather", "islamic", "activity", "rector"],
+        game304: ["brace", "bite", "smile", "skin", "grind", "lip", "incisor", "infection", "peroxide", "procedure", "result", "hence", "pull", "impact", "hammer", "around", "alone"],
+        game305: ["granola", "strawberry", "spinach", "cereal", "peanut", "banana", "flavor", "quinoa", "tangy", "tablespoon", "beetroot", "meal", "freshly", "blackberry", "cupcake", "basmati", "dijon"],
+        game306: ["vacationer", "travel", "restaurant", "vicinity", "lodging", "arrive", "taxi", "overseas", "discover", "activity", "interest", "influx", "come", "enough", "conveniently", "trail", "generally"],
+        game307: ["lip", "sneeze", "hand", "shoulder", "neck", "cheekbone", "skin", "snot", "breast", "thumb", "push", "cross", "badly", "bottom", "cry", "wiggle", "somewhat"],
+        game308: ["webmail", "groupwise", "retrieve", "password", "locker", "door", "sender", "postfix", "incoming", "display", "organizer", "cache", "deco", "accessible", "create", "allow", "migration"],
+        game309: ["balsamic", "roast", "spinach", "eggplant", "grape", "vinaigrette", "pasta", "grill", "honey", "red", "margarine", "barley", "harvest", "casserole", "greek", "instead", "powder"],
+        game310: ["compartment", "bedside", "box", "divider", "hinge", "sink", "cubbies", "adjustable", "corner", "counter", "futon", "leather", "finger", "velcro", "compact", "cube", "ottoman"],
+        game311: ["pear", "apple", "avocado", "melon", "juice", "olive", "lychee", "honeydew", "fennel", "pork", "cheesecake", "marmalade", "anchovy", "crunchy", "ounce", "husk", "appetizer"],
+        game312: ["bay", "rhode", "cape", "harbor", "place", "oahu", "southeast", "east", "region", "along", "shoreline", "living", "enjoy", "tuvalu", "become", "name", "establish"],
+        game313: ["quail", "waterfowl", "bear", "rooster", "cow", "dog", "chick", "hunter", "anaheim", "ruddy", "even", "apparently", "famous", "poop", "feeder", "fluffy", "also"],
+        game314: ["mansion", "haunt", "manor", "abbey", "scotland", "mediaeval", "tomb", "ireland", "majestic", "crusader", "inverness", "discover", "cinderella", "colourful", "pine", "dot", "rolling"],
+        game315: ["petal", "branch", "fresh", "orange", "bloom", "herb", "small", "flowering", "maple", "celery", "corn", "surface", "harvest", "body", "soon", "magnolia", "sky"],
+        game316: ["mortar", "wooden", "plaster", "wood", "patio", "kiln", "pillar", "ceramic", "inside", "flat", "pour", "planter", "tumble", "dark", "stuccoed", "add", "good"],
+        game317: ["hottie", "cherry", "peach", "cocoa", "bee", "cuties", "delicious", "blond", "pepper", "goodness", "nubile", "cranberry", "delectable", "whole", "brooke", "gloss", "single"],
+        game318: ["wheel", "purse", "crate", "stow", "valuable", "drawer", "carton", "oversize", "trash", "large", "discard", "gusset", "full", "handle", "hallway", "accoutrement", "leg"],
+        game319: ["trombone", "tenor", "concerto", "string", "tuba", "accompaniment", "vocal", "virtuoso", "continuo", "sextet", "arrange", "mendelssohn", "recording", "kazoos", "cup", "pearl", "partita"],
+        game320: ["sandwich", "breakfast", "bread", "omelette", "grit", "fudge", "bun", "brownie", "nachos", "choc", "meal", "condiment", "basket", "tapioca", "potatoe", "soy", "mmm"],
+        game321: ["wrap", "scarf", "suit", "two", "fit", "cotton", "three", "perfect", "might", "try", "mean", "point", "jersey", "boy", "weekend", "dark", "raise"],
+        game322: ["fit", "kitchen", "armoires", "bookcase", "upstairs", "tile", "shower", "decor", "sleek", "dishwasher", "collection", "tub", "ideal", "skirting", "spare", "mismatch", "couture"],
+        game323: ["america", "religious", "education", "people", "exist", "national", "educational", "ethic", "important", "literary", "liberal", "part", "scientist", "progress", "sometimes", "vital", "philanthropy"],
+        game324: ["orchestra", "mandolin", "flute", "melody", "piece", "classical", "value", "row", "byte", "str", "regular", "path", "part", "voice", "pedal", "sonata", "exact"],
+        game325: ["last", "endure", "happiness", "faith", "gratitude", "encouragement", "fun", "respect", "confidence", "idea", "coworker", "past", "somehow", "mentorship", "participation", "ongoing", "anything"],
+        game326: ["tin", "cook", "spatula", "bundt", "crust", "foil", "stove", "platter", "meat", "glaze", "wash", "powder", "shape", "full", "eggplant", "apron", "storage"],
+        game327: ["topo", "guide", "geography", "description", "geographical", "usgs", "base", "available", "local", "help", "give", "earth", "graphic", "follow", "via", "date", "vacation"],
+        game328: ["traffic", "turnpike", "railroad", "northbound", "thoroughfare", "mile", "north", "river", "amtrak", "national", "mountain", "nw", "within", "approach", "governor", "construct", "almost"],
+        game329: ["track", "classical", "instrumentals", "piano", "audio", "singer", "funk", "performance", "enjoy", "choir", "showcase", "belong", "whatever", "legend", "bach", "app", "lp"],
+        game330: ["jacquard", "cashmere", "ivory", "tulle", "dress", "drape", "knit", "bridal", "sequined", "fur", "shantung", "corset", "felted", "mulberry", "napkin", "bloom", "peruvian"],
+        game331: ["strawberry", "pepper", "tomato", "pomegranate", "parsley", "sugar", "grape", "grate", "pumpkin", "mushroom", "nut", "seedless", "seasoning", "bowl", "steak", "cocktail", "make"],
+        game332: ["titanium", "aluminum", "work", "zinc", "hot", "wooden", "stove", "inch", "ore", "bed", "gold", "equip", "must", "furniture", "belt", "premium", "superman"]
     }
 
     const filesToClear = ['contexto_responses_dict.json', 'winning_word.json'];
@@ -401,36 +439,275 @@ async function runScript() {
 
     await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 5000)));
 
+    // await page.addStyleTag({
+    //     content: `
+    //         .row span:first-child {
+    //             flex: auto;
+    //         }
+    //     `
+    //     });
+
     // Create a container div for the images
     await page.addScriptTag({
         content: `
-        const container = document.createElement('div');
-        container.style.position = 'absolute';
-        container.id = 'image-container';
-        container.style.top = '200px';
-        container.style.left = '100px';
-        container.style.width = '200px';
-        container.style.overflow = 'hidden'; // hide overflow
-        container.style.animation = 'scrolling 50s linear infinite'; // add scrolling animation
-        document.body.appendChild(container);
-    `
-    });
+            const container = document.createElement('div');
+            container.style.position = 'absolute';
+            container.id = 'image-container';
+            container.style.top = '200px';
+            container.style.left = '100px';
+            container.style.width = '200px';
+            container.style.overflow = 'hidden'; // hide overflow
+            container.style.animation = 'scrolling 50s linear infinite'; // add scrolling animation
+            document.body.appendChild(container);
+        `
+        });
 
-    await page.addScriptTag({
-        content: `
-        const leaderboard = document.createElement('div');
-        leaderboard.style.position = 'absolute';
-        leaderboard.id = 'leaderboard';
-        leaderboard.style.top = '1px';
-        leaderboard.style.left = '93px';
-        leaderboard.style.width = '164px';
-        leaderboard.style.height = '200px';
-        leaderboard.style.backgroundColor = '#fffbf5';
-        leaderboard.style.position = 'absolute';
-        leaderboard.style.zIndex = '1';
-        document.body.appendChild(leaderboard);
-    `
-    });
+        await page.addScriptTag({
+            content: `
+            const leaderboard = document.createElement('div');
+            leaderboard.style.position = 'absolute';
+            leaderboard.id = 'leaderboard';
+            leaderboard.style.top = '1px';
+            leaderboard.style.left = '93px';
+            leaderboard.style.width = '164px';
+            leaderboard.style.height = '200px';
+            leaderboard.style.backgroundColor = '#fffbf5';
+            leaderboard.style.position = 'absolute';
+            leaderboard.style.zIndex = '1';
+            document.body.appendChild(leaderboard);
+        `
+        });
+
+        const scriptContent = `
+        var random = Math.random
+        , cos = Math.cos
+        , sin = Math.sin
+        , PI = Math.PI
+        , PI2 = PI * 2
+        , timer = undefined
+        , frame = undefined
+        , confetti = [];
+
+    var particles = 10
+        , spread = 10
+        , sizeMin = 3
+        , sizeMax = 12 - sizeMin
+        , eccentricity = 10
+        , deviation = 100
+        , dxThetaMin = -.1
+        , dxThetaMax = -dxThetaMin - dxThetaMin
+        , dyMin = .13
+        , dyMax = .18
+        , dThetaMin = .4
+        , dThetaMax = .7 - dThetaMin;
+
+    var colorThemes = [
+        function() {
+        return color(200 * random()|0, 200 * random()|0, 200 * random()|0);
+        }, function() {
+        var black = 200 * random()|0; return color(200, black, black);
+        }, function() {
+        var black = 200 * random()|0; return color(black, 200, black);
+        }, function() {
+        var black = 200 * random()|0; return color(black, black, 200);
+        }, function() {
+        return color(200, 100, 200 * random()|0);
+        }, function() {
+        return color(200 * random()|0, 200, 200);
+        }, function() {
+        var black = 256 * random()|0; return color(black, black, black);
+        }, function() {
+        return colorThemes[random() < .5 ? 1 : 2]();
+        }, function() {
+        return colorThemes[random() < .5 ? 3 : 5]();
+        }, function() {
+        return colorThemes[random() < .5 ? 2 : 4]();
+        }
+    ];
+    function color(r, g, b) {
+        return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+
+    // Cosine interpolation
+    function interpolation(a, b, t) {
+        return (1-cos(PI*t))/2 * (b-a) + a;
+    }
+
+    // Create a 1D Maximal Poisson Disc over [0, 1]
+    var radius = 1/eccentricity, radius2 = radius+radius;
+    function createPoisson() {
+        // domain is the set of points which are still available to pick from
+        // D = union{ [d_i, d_i+1] | i is even }
+        var domain = [radius, 1-radius], measure = 1-radius2, spline = [0, 1];
+        while (measure) {
+        var dart = measure * random(), i, l, interval, a, b, c, d;
+
+        // Find where dart lies
+        for (i = 0, l = domain.length, measure = 0; i < l; i += 2) {
+            a = domain[i], b = domain[i+1], interval = b-a;
+            if (dart < measure+interval) {
+            spline.push(dart += a-measure);
+            break;
+            }
+            measure += interval;
+        }
+        c = dart-radius, d = dart+radius;
+
+        // Update the domain
+        for (i = domain.length-1; i > 0; i -= 2) {
+            l = i-1, a = domain[l], b = domain[i];
+            // c---d          c---d  Do nothing
+            //   c-----d  c-----d    Move interior
+            //   c--------------d    Delete interval
+            //         c--d          Split interval
+            //       a------b
+            if (a >= c && a < d)
+            if (b > d) domain[l] = d; // Move interior (Left case)
+            else domain.splice(l, 2); // Delete interval
+            else if (a < c && b > c)
+            if (b <= d) domain[i] = c; // Move interior (Right case)
+            else domain.splice(i, 0, c, d); // Split interval
+        }
+
+        // Re-measure the domain
+        for (i = 0, l = domain.length, measure = 0; i < l; i += 2)
+            measure += domain[i+1]-domain[i];
+        }
+
+        return spline.sort();
+    }
+
+    // Create the overarching container
+    var confettiContainer = document.createElement('div');
+    confettiContainer.setAttribute('id', 'confetti_container');
+    confettiContainer.style.position = 'fixed';
+    confettiContainer.style.top      = '0';
+    confettiContainer.style.left     = '0';
+    confettiContainer.style.width    = '100%';
+    confettiContainer.style.height   = '0';
+    confettiContainer.style.overflow = 'visible';
+    confettiContainer.style.zIndex   = '9999';
+
+    // Confetto constructor
+    function Confetto(theme) {
+        this.frame = 0;
+        this.outer = document.createElement('div');
+        this.inner = document.createElement('div');
+        this.outer.appendChild(this.inner);
+
+        var outerStyle = this.outer.style, innerStyle = this.inner.style;
+        outerStyle.position = 'absolute';
+        outerStyle.width  = (sizeMin + sizeMax * random()) + 'px';
+        outerStyle.height = (sizeMin + sizeMax * random()) + 'px';
+        innerStyle.width  = '100%';
+        innerStyle.height = '100%';
+        innerStyle.backgroundColor = theme();
+
+        outerStyle.perspective = '50px';
+        outerStyle.transform = 'rotate(' + (360 * random()) + 'deg)';
+        this.axis = 'rotate3D(' +
+        cos(360 * random()) + ',' +
+        cos(360 * random()) + ',0,';
+        this.theta = 360 * random();
+        this.dTheta = dThetaMin + dThetaMax * random();
+        innerStyle.transform = this.axis + this.theta + 'deg)';
+
+        this.x = window.innerWidth * random();
+        this.y = -deviation;
+        this.dx = sin(dxThetaMin + dxThetaMax * random());
+        this.dy = dyMin + dyMax * random();
+        outerStyle.left = this.x + 'px';
+        outerStyle.top  = this.y + 'px';
+
+        // Create the periodic spline
+        this.splineX = createPoisson();
+        this.splineY = [];
+        for (var i = 1, l = this.splineX.length-1; i < l; ++i)
+        this.splineY[i] = deviation * random();
+        this.splineY[0] = this.splineY[l] = deviation * random();
+
+        this.update = function(height, delta) {
+        this.frame += delta;
+        this.x += this.dx * delta;
+        this.y += this.dy * delta;
+        this.theta += this.dTheta * delta;
+
+        // Compute spline and convert to polar
+        var phi = this.frame % 7777 / 7777, i = 0, j = 1;
+        while (phi >= this.splineX[j]) i = j++;
+        var rho = interpolation(
+            this.splineY[i],
+            this.splineY[j],
+            (phi-this.splineX[i]) / (this.splineX[j]-this.splineX[i])
+        );
+        phi *= PI2;
+
+        outerStyle.left = this.x + rho * cos(phi) + 'px';
+        outerStyle.top  = this.y + rho * sin(phi) + 'px';
+        innerStyle.transform = this.axis + this.theta + 'deg)';
+        return this.y > height+deviation;
+        };
+    }
+
+    function poof() {
+        if (!frame) {
+            // Append the container
+            document.body.appendChild(confettiContainer);
+
+            // Add confetti
+            var theme = colorThemes[0]
+            , count = 0;
+            (function addConfetto() {
+                var confetto = new Confetto(theme);
+                confetti.push(confetto);
+                confettiContainer.appendChild(confetto.outer);
+                timer = setTimeout(addConfetto, spread * random());
+            })(0);
+
+            // Start the loop
+            var prev = undefined;
+            requestAnimationFrame(function loop(timestamp) {
+                var delta = prev ? timestamp - prev : 0;
+                prev = timestamp;
+                var height = window.innerHeight;
+
+                for (var i = confetti.length-1; i >= 0; --i) {
+                    if (confetti[i].update(height, delta)) {
+                        confettiContainer.removeChild(confetti[i].outer);
+                        confetti.splice(i, 1);
+                    }
+                }
+
+                if (timer || confetti.length)
+                    return frame = requestAnimationFrame(loop);
+
+                // Cleanup
+                document.body.removeChild(confettiContainer);
+                frame = undefined;
+            });
+
+            // Stop confetti after 4 seconds
+            setTimeout(function(){
+                clearTimeout(timer);
+                if(frame) cancelAnimationFrame(frame);
+                frame = undefined;
+                timer = undefined;
+
+                // Remove remaining confetti
+                while(confetti.length) {
+                    confettiContainer.removeChild(confetti[0].outer);
+                    confetti.splice(0, 1);
+                }
+                console.log(confetti.length)
+
+                // Remove container
+                document.body.removeChild(confettiContainer);
+            }, 5000);
+        }
+    }
+    `;
+
+    await page.addScriptTag({ content: scriptContent });
 
     await page.evaluate(() => {
         const leaderboardElement = document.getElementById('leaderboard');
@@ -616,12 +893,85 @@ async function runScript() {
         
         if (count % 8 === 0) {
             await page.evaluate(() => {
-                document.getElementById("toasty4").innerText = "Tutorial coming soon!!!"
+                document.getElementById("toasty4").innerText = "Unlock hint for confetti!!!"
             });
         } else {
             await page.evaluate(() => {
-                document.getElementById("toasty4").innerText = "Follow top viewers!!!"
+                document.getElementById("toasty4").innerText = "Follow Top Viewers!!!"
             });
+        }
+
+        //remove winning div if it's there
+        await page.evaluate(() => {
+            const wElement = document.getElementById('winningToast');
+            if (wElement) {
+                wElement.parentNode.removeChild(wElement);
+            }
+        });
+
+        //execute hint
+        try {
+            if (count % 40 === 0 && count != 0) {
+
+                var topNumber = await page.evaluate(() => {
+                    return document.querySelectorAll(".row")[0].children[1].innerText
+                });
+    
+                var coverExists = await page.evaluate(() => {
+                    return document.querySelector('.cover') !== null;
+                });
+    
+                console.log(topNumber)
+                if (Number(topNumber) !== 2 && !coverExists) {
+    
+                    await page.click('.btn');
+                    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 500)));
+                    await page.evaluate(() => {
+                        document.querySelectorAll(".menu-item")[1].click();
+                    })
+                    //cover hint
+                    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 200)));
+                    try {
+                        await page.evaluate(() => {
+                        
+                            for (var i = 0; i < 2; i++) {
+                                const targetDiv = document.querySelectorAll(".row-wrapper")[i];
+            
+                                // Create a cover div
+                                const coverDiv = document.createElement('div');
+                                coverDiv.classList.add("cover");
+                                coverDiv.style.position = 'absolute';
+                                coverDiv.style.top = '0';
+                                coverDiv.style.left = '0';
+                                coverDiv.style.width = '85%';
+                                coverDiv.style.height = '100%';
+                                coverDiv.style.backgroundColor = 'rgba(0, 0, 0)';
+                                coverDiv.style.color = "white";
+                                coverDiv.style.paddingLeft = "10px";
+                                coverDiv.style.paddingTop = "3px";
+            
+                                // Create a text element
+                                const textElement = document.createElement('p');
+                                textElement.innerHTML = 'Doughnut &#127849; for a hint word!';
+            
+                                // Add the text element to the cover div
+                                coverDiv.appendChild(textElement);
+            
+                                // Add the cover div to the target div
+                                targetDiv.appendChild(coverDiv);
+                            }
+                        });
+                    } catch(e) {
+                        console.log(e)
+                    }
+                    
+                    count++;
+                    continue;
+    
+                }
+            }
+        } catch(e) {
+            console.log('error executing hint')
         }
 
         var tableHTML = ``;
@@ -715,7 +1065,7 @@ async function runScript() {
                 var payWords = games["game" + gameNumber];
                 await page.focus(".word");
 
-                for (var i = 1; i < 3; i++) {
+                for (var i = 2; i < 3; i++) {
                     var word = payWords[i];
                     await page.focus(".word");
                     await page.evaluate((word) => {
@@ -727,7 +1077,7 @@ async function runScript() {
                 }
 
                 await page.evaluate(() => {
-                    for (var i = 0; i < 3; i++) {
+                    for (var i = 0; i < 2; i++) {
                         const targetDiv = document.querySelectorAll(".row-wrapper")[i];
                 
                         // Create a cover div
@@ -744,7 +1094,7 @@ async function runScript() {
                 
                         // Create a text element
                         const textElement = document.createElement('p');
-                        textElement.innerHTML = 'Tiny diny &#x1F996; for a hint word!';
+                        textElement.innerHTML = 'Doughnut &#127849; for a hint word!';
                         textElement.style.animation = 'color-change 1s infinite alternate';
                 
                         // Add the text element to the cover div
@@ -790,28 +1140,13 @@ async function runScript() {
 
                     if (element) {
                         // Remove the element from the page
+                        playWinnerSound(confettiSoundCommand);
                         await page.evaluate(() => {
                             const elements = document.querySelectorAll('.cover');
                             const lastElement = elements[elements.length - 1];
                             lastElement.remove();
+                            poof();
                         });
-                        // await page.evaluate(() => {
-                        //     function confetti() {
-                        //         confetti({
-                        //             particleCount: 300,
-                        //             spread: 100,
-                        //             origin: { y: 0.6, x: .3 }
-                        //         });
-                        //         confetti({
-                        //             particleCount: 400,
-                        //             spread: 100,
-                        //             origin: { y: 0.6, x: .7 }
-                        //         });
-                        //     }
-                    
-                        //     // Call the function
-                        //     confetti();
-                        // });
                     } else {
                         console.log('No element with class "cover" found on the page.');
                     }
@@ -856,11 +1191,11 @@ async function runScript() {
                     await page.$eval('.word', input => input.value = '');
 
                     try {
-                        if (count % 20 === 0) {
-                            playMP3File(followSound).catch(error => console.error('An error occurred:', error));
-                        } else if (count % 2 === 0 && count !== 0) {
-                            playMP3File(clickSound).catch(error => console.error('An error occurred:', error));
-                        }
+                        // if (count % 20 === 0) {
+                        //     playMP3File(followSound).catch(error => console.error('An error occurred:', error));
+                        // } else if (count % 2 === 0 && count !== 0) {
+                        //     playMP3File(clickSound).catch(error => console.error('An error occurred:', error));
+                        // }
                         
                         await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 500)));
                         var jsonData = {}
@@ -920,6 +1255,35 @@ async function runScript() {
                                     var text = jsonData["text"]
                                     await page.evaluate((username, text) => {
                                         document.getElementById("toasty").innerText = "@" + username + " commented " + text
+                                        setTimeout(() => {
+                                            if (document.querySelectorAll(".message")[0].querySelector(".current")) {
+                                                var newSpan = document.createElement('span');
+                                                newSpan.textContent = "@" + username;
+                                                newSpan.style.width = '37px';
+                                                newSpan.style.height = '37px';
+                                                newSpan.style.position = 'relative';
+                                                newSpan.style.margin = "auto";
+                                                newSpan.style.flexBasis = "content";
+                                            
+                                                // Insert the new span immediately after the first span
+                                                var firstSpan = document.querySelectorAll(".message")[0].querySelector(".current").querySelector(".row").firstChild;
+                                                firstSpan.parentNode.insertBefore(newSpan, firstSpan.nextSibling);                                                
+                                            }
+
+                                            if (document.querySelectorAll(".current").length > 1) {
+                                                var newSpan = document.createElement('span');
+                                                newSpan.textContent = "@" + username;
+                                                newSpan.style.width = '37px';
+                                                newSpan.style.height = '37px';
+                                                newSpan.style.position = 'relative';
+                                                newSpan.style.margin = "auto";
+                                                newSpan.style.flexBasis = "content";
+                                            
+                                                // Insert the new span immediately after the first span
+                                                var firstSpan = document.querySelectorAll(".current")[1].querySelector(".row").firstChild;
+                                                firstSpan.parentNode.insertBefore(newSpan, firstSpan.nextSibling);
+                                            }
+                                        }, 300)
                                     }, username, text);
                                 } catch (e) {
                                     console.log(e)
@@ -987,10 +1351,12 @@ async function runScript() {
             console.log(exists)
 
             if (exists) {
+                
                 //reset count to set the game up again
                 count = 0;
-                playMP3File(winnerSound).catch(error => console.error('An error occurred:', error));
+                playWinnerSound(winnerSoundCommand);
                 var winningUser = await page.evaluate(() => {
+                    poof();
                     var winningUser = document.getElementById("toasty").innerHTML.split(" commented")[0];
                     var winningWord = document.getElementById("toasty").innerHTML.split(" commented ")[1];
                     const winningToast = document.createElement('div');
@@ -1037,18 +1403,21 @@ async function runScript() {
                 });
 
                 //refresh mp3 player
-                exec(`powershell.exe -File ${powershellScriptPath}`, (error, stdout, stderr) => {
-                    if (error) {
-                      console.error(`Error executing PowerShell script: ${error.message}`);
-                      return;
-                    }
-                    if (stderr) {
-                      console.error(`PowerShell script encountered an error: ${stderr}`);
-                      return;
-                    }
-                    // Process the output from the PowerShell script
-                    console.log(`PowerShell script output:\n${stdout}`);
-                  });
+                setTimeout(() => {
+                    exec(`powershell.exe -File ${powershellScriptPath}`, (error, stdout, stderr) => {
+                        if (error) {
+                          console.error(`Error executing PowerShell script: ${error.message}`);
+                          return;
+                        }
+                        if (stderr) {
+                          console.error(`PowerShell script encountered an error: ${stderr}`);
+                          return;
+                        }
+                        // Process the output from the PowerShell script
+                        console.log(`PowerShell script output:\n${stdout}`);
+                      });
+                }, 5000)
+
 
                 randGame = await page.evaluate((playedGames) => {
                     var randNumber = -1;
@@ -1109,7 +1478,7 @@ async function runScript() {
                 count++;
             }
 
-            await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)));
+            await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 1200)));
 
         } catch (error) {
 
@@ -1169,6 +1538,45 @@ function playMP3File(fileURL) {
           resolve();
         }
       });
+    });
+  }
+
+  function playMP3FileNoInterrupt(fileURL) {
+    return new Promise((resolve, reject) => {
+      if (isPlaying) {
+        console.log('A sound is already playing, skipping this one.');
+        resolve();
+        return;
+      }
+  
+      isPlaying = true;
+  
+      player.play(fileURL, (error) => {
+        if (error) {
+          reject(error);
+        } else {
+          console.log('MP3 file is now playing!');
+          resolve();
+        }
+  
+        isPlaying = false; // Reset the playing state when the sound finishes
+      });
+    });
+  }
+
+  function playWinnerSound(soundCommand) {
+    exec(soundCommand, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`An error occurred: ${error}`);
+            return;
+        }
+    
+        if (stderr) {
+            console.error(`An error occurred: ${stderr}`);
+            return;
+        }
+    
+        console.log(`Output: ${stdout}`);
     });
   }
 
